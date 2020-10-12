@@ -86,7 +86,7 @@ class GradientBatch(nn.Module):
 		img_dx = img_dx.view(batch_size, k, h, w)
 		img_dy = img_dy.view(batch_size, k, h, w)
 
-		if not isinstance(img, torch.autograd.variable.Variable):
+		if not isinstance(img, torch.autograd.Variable):
 			img_dx = img_dx.data
 			img_dy = img_dy.data
 
@@ -118,7 +118,7 @@ def warp_hmg(img, p):
 
 	batch_size, k, h, w = img.size()
 
-	if isinstance(img, torch.autograd.variable.Variable):
+	if isinstance(img, torch.autograd.Variable):
 		if USE_CUDA:
 			x = Variable(torch.arange(w).cuda())
 			y = Variable(torch.arange(h).cuda())
@@ -133,18 +133,18 @@ def warp_hmg(img, p):
 
 	H = param_to_H(p)
 
-	if isinstance(img, torch.autograd.variable.Variable):
+	if isinstance(img, torch.autograd.Variable):
 		if USE_CUDA:
 		# create xy matrix, 2 x N
-			xy = torch.cat((X.view(1, X.numel()), Y.view(1, Y.numel()), Variable(torch.ones(1, X.numel()).cuda())), 0)
+			xy = torch.cat((X.view(1, X.numel()), Y.view(1, Y.numel()), Variable(torch.ones(1, X.numel(), dtype=X.dtype).cuda())), 0)
 		else:
-			xy = torch.cat((X.view(1, X.numel()), Y.view(1, Y.numel()), Variable(torch.ones(1, X.numel()))), 0)
+			xy = torch.cat((X.view(1, X.numel()), Y.view(1, Y.numel()), Variable(torch.ones(1, X.numel(), dtype=X.dtype))), 0)
 	else:
-		xy = torch.cat((X.view(1, X.numel()), Y.view(1, Y.numel()), torch.ones(1, X.numel())), 0)
+		xy = torch.cat((X.view(1, X.numel()), Y.view(1, Y.numel()), torch.ones(1, X.numel(), dtype=X.dtype)), 0)
 
 	xy = xy.repeat(batch_size, 1, 1)
 
-	xy_warp = H.bmm(xy)
+	xy_warp = H.bmm(xy.float())
 
 	# extract warped X and Y, normalizing the homog coordinates
 	X_warp = xy_warp[:,0,:] / xy_warp[:,2,:]
@@ -164,7 +164,7 @@ def grid_bilinear_sampling(A, x, y):
 	grid = torch.cat((x_norm.view(batch_size, h, w, 1), y_norm.view(batch_size, h, w, 1)), 3)
 	Q = grid_sample(A, grid, mode='bilinear')
 
-	if isinstance(A, torch.autograd.variable.Variable):
+	if isinstance(A, torch.autograd.Variable):
 		if USE_CUDA:
 			in_view_mask = Variable(((x_norm.data > -1+2/w) & (x_norm.data < 1-2/w) & (y_norm.data > -1+2/h) & (y_norm.data < 1-2/h)).type_as(A.data).cuda())
 		else:
@@ -179,7 +179,7 @@ def param_to_H(p):
 	# batch parameters to batch homography
 	batch_size, _, _ = p.size()
 
-	if isinstance(p, torch.autograd.variable.Variable):
+	if isinstance(p, torch.autograd.Variable):
 		if USE_CUDA:
 			z = Variable(torch.zeros(batch_size, 1, 1).cuda())
 		else:
@@ -189,7 +189,7 @@ def param_to_H(p):
 
 	p_ = torch.cat((p, z), 1)
 
-	if isinstance(p, torch.autograd.variable.Variable):
+	if isinstance(p, torch.autograd.Variable):
 		if USE_CUDA:
 			I = Variable(torch.eye(3,3).repeat(batch_size, 1, 1).cuda())
 		else:
@@ -205,7 +205,7 @@ def H_to_param(H):
 	# batch homography to batch parameters
 	batch_size, _, _ = H.size()
 
-	if isinstance(H, torch.autograd.variable.Variable):
+	if isinstance(H, torch.autograd.Variable):
 		if USE_CUDA:
 			I = Variable(torch.eye(3,3).repeat(batch_size, 1, 1).cuda())
 		else:

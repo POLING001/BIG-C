@@ -18,20 +18,21 @@ USE_CUDA = torch.cuda.is_available()
 
 class InverseBatch(torch.autograd.Function):
 
-    def forward(self, input):
+    @staticmethod
+    def forward(ctx, input):
         batch_size, h, w = input.size()
         assert(h == w)
         H = torch.Tensor(batch_size, h, h).type_as(input)
         for i in range(0, batch_size):
             H[i, :, :] = input[i, :, :].inverse()
-        # self.save_for_backward(H)
-        self.H = H
+        ctx.save_for_backward(H)
+
         return H
 
-    def backward(self, grad_output):
+    @staticmethod
+    def backward(ctx, grad_output):
         # print(grad_output.is_contiguous())
-        # H, = self.saved_tensors
-        H = self.H
+        H, = self.saved_tensors
 
         [batch_size, h, w] = H.size()
         assert(h == w)
@@ -400,7 +401,7 @@ class DeepLK(nn.Module):
 		super(DeepLK, self).__init__()
 		self.img_gradient_func = GradientBatch()
 		self.conv_func = conv_net
-		self.inv_func = InverseBatch()
+		self.inv_func = InverseBatch
 
 	def forward(self, img, temp, init_param=None, tol=1e-3, max_itr=500, conv_flag=0, ret_itr=False):
 
@@ -423,7 +424,7 @@ class DeepLK(nn.Module):
 		dIdp = self.compute_dIdp(Ftgrad_x, Ftgrad_y)
 		dIdp_t = dIdp.transpose(1, 2)
 
-		invH = self.inv_func(dIdp_t.bmm(dIdp))
+		invH = self.inv_func.apply(dIdp_t.bmm(dIdp))
 
 		invH_dIdp = invH.bmm(dIdp_t)
 
@@ -573,9 +574,9 @@ def main():
 	img1_coarse = img1_coarse.repeat(5,1,1,1)
 	img2_coarse = img2_coarse.repeat(5,1,1,1)
 
-	wimg2, _ = warp_hmg(img2, H_to_param(dlk.inv_func(param_to_H(pt))))
+	wimg2, _ = warp_hmg(img2, H_to_param(dlk.inv_func.apply(param_to_H(pt))))
 
-	wimg2_coarse, _ = warp_hmg(img2_coarse, H_to_param(dlk.inv_func(param_to_H(pt))))
+	wimg2_coarse, _ = warp_hmg(img2_coarse, H_to_param(dlk.inv_func.apply(param_to_H(pt))))
 
 	transforms.ToPILImage()(wimg2[0,:,:,:].data).show()
 

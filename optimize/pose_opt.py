@@ -26,6 +26,14 @@ import glob
 import matplotlib.pyplot as plt
 import scipy.io as sio
 
+
+# suppress endless SourceChangeWarning messages from pytorch
+import warnings
+warnings.filterwarnings("ignore")
+
+# figure out where the numpy warnings are coming from by making them errors. looks like Matlab logic in a numpy program
+#np.warnings.filterwarnings('error', category=np.VisibleDeprecationWarning)                  
+
 def optimize(I, P, T, V, tol, coeff_mult):
 	'''
 	Args:
@@ -1388,11 +1396,11 @@ def sliding_window_opt(args):
 		I_2x = I_org_2x[i : i + 2, :, :, :]
 
 		T = np.array([1])
-		V = np.array(
-			[
+		V = np.hstack(
+			(
 			 np.arange(50),
 			 np.array([0])
-			]
+			)
 		)
 
 		V = np.delete(V, 0)
@@ -1582,11 +1590,11 @@ def sliding_window_sz2_opt(args):
 
 		T = np.array([0])
 		
-		V = np.array(
-			[
+		V = np.hstack(
+			(
 			 np.arange(50),
 			 np.array([1])
-			]
+			)
 		)
 
 		V = np.delete(V, 0)

@@ -163,7 +163,7 @@ def grid_bilinear_sampling(A, x, y):
 	x_norm = x/((w-1)/2) - 1
 	y_norm = y/((h-1)/2) - 1
 	grid = torch.cat((x_norm.view(batch_size, h, w, 1), y_norm.view(batch_size, h, w, 1)), 3)
-	Q = grid_sample(A, grid, mode='bilinear')
+	Q = grid_sample(A, grid, mode='bilinear', align_corners=True)
 
 	if isinstance(A, torch.autograd.Variable):
 		if USE_CUDA:
